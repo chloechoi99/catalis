@@ -517,7 +517,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <!-- ── Settings ── -->
   <section id="settings" class="view">
     <div class="dash-grid">
-      <div class="card span6">
+      <div class="card span6" id="financialGoalsCard">
         <h2>Financial Goals</h2>
         <div class="form-grid" style="grid-template-columns:1fr 1fr">
           <div class="field" style="grid-column:1/-1"><label>Currency <button class="tip-btn" data-tip-key="currency" type="button">?</button></label>
@@ -545,7 +545,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div>
 
-      <div class="card span6">
+      <div class="card span6" id="planAllocationCard">
         <h2>Monthly Investment Allocation</h2>
         <div id="planEditor"></div>
         <button id="addPlanBtn" style="margin-top:8px">+ Add Line</button>
@@ -1622,13 +1622,13 @@ const TOUR=[
     tab:'settings',
     title:'Step 1 \u2014 Financial targets',
     body:'Set your monthly living expenses, emergency fund target (months of expenses to hold in cash), and monthly investment goal. These power your dashboard KPIs.',
-    sel:'#settingExpenses',wide:true
+    sel:'#financialGoalsCard',wide:true
   },
   {
     tab:'settings',
     title:'Step 2 \u2014 Investment plan',
     body:'Add your regular investments here. Search by name or ticker (VOO, Bitcoin, NVDA\u2026). Your monthly trade log pre-fills from this plan automatically \u2014 no re-typing every month.',
-    sel:'#planEditor',wide:true
+    sel:'#planAllocationCard',wide:true
   },
   {
     tab:'entry',

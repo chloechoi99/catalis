@@ -243,6 +243,26 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .asset-edit-grid label{font-size:10px !important;margin-bottom:4px !important}
 .edit-btn{background:transparent;border:1px solid rgba(102,114,160,.3);color:var(--muted);border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer;transition:border-color .15s,color .15s}
 .edit-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+
+/* ── Onboarding tour ── */
+#tourOverlay{position:fixed;inset:0;z-index:25000;display:none}
+#tourOverlay.active{display:block}
+#tourSpotlight{position:fixed;z-index:25001;pointer-events:none;border-radius:10px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.8);
+  transition:left .38s cubic-bezier(.22,1,.36,1),top .38s cubic-bezier(.22,1,.36,1),
+             width .38s cubic-bezier(.22,1,.36,1),height .38s cubic-bezier(.22,1,.36,1)}
+#tourCard{position:fixed;z-index:25002;background:rgba(10,10,22,.98);backdrop-filter:blur(28px);
+  -webkit-backdrop-filter:blur(28px);border:1px solid rgba(139,92,246,.4);border-radius:18px;
+  padding:24px 26px;width:292px;box-shadow:0 20px 70px rgba(0,0,0,.75),0 0 0 1px rgba(139,92,246,.08);
+  transition:left .38s cubic-bezier(.22,1,.36,1),top .38s cubic-bezier(.22,1,.36,1),transform .38s cubic-bezier(.22,1,.36,1)}
+.tour-step-lbl{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent2);margin-bottom:12px}
+#tourCard h3{font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:9px}
+#tourCard p{font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:22px}
+.tour-btns{display:flex;align-items:center;gap:8px}
+#tourSkipBtn{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;
+  padding:0;flex:1;text-align:left;text-decoration:underline;text-underline-offset:3px}
+#tourSkipBtn:hover{color:var(--muted2)}
+#tourNextBtn{padding:9px 20px;font-size:13px}
 </style>
 </head>
 <body>
@@ -282,6 +302,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
     </div>
     <button class="primary" id="setupDoneBtn" style="width:100%;padding:15px;font-size:14px">Get Started →</button>
+  </div>
+</div>
+
+<div id="tourOverlay">
+  <div id="tourSpotlight"></div>
+  <div id="tourCard">
+    <div class="tour-step-lbl" id="tourStepNum">1 / 6</div>
+    <h3 id="tourTitleEl"></h3>
+    <p id="tourBodyEl"></p>
+    <div class="tour-btns">
+      <button id="tourSkipBtn">Skip tour</button>
+      <button id="tourNextBtn" class="primary">Next &rarr;</button>
+    </div>
   </div>
 </div>
 
@@ -537,24 +570,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
 const LS_KEY="finance_dashboard_v1";
 function clone(o){return JSON.parse(JSON.stringify(o))}
 const defaultState={
-  settings:{expenses:1000,emergencyMonths:10,monthlyStock:250,cashApr:2.5,currency:'EUR',_setupDone:false},
-  plan:[
-    {name:"S&P 500",amount:115},
-    {name:"MSCI World ex-USA",amount:75},
-    {name:"MSCI EM IMI",amount:45},
-    {name:"Nasdaq-100",amount:15}
-  ],
-  assetNames:["S&P 500","MSCI World ex-USA","MSCI EM IMI","Nasdaq-100","Nvidia","TSMC","Siemens Energy","Vertiv"],
-  assetMeta:{
-    "S&P 500":{cat:"ETF",ticker:"VOO"},
-    "MSCI World ex-USA":{cat:"ETF",ticker:"VXUS"},
-    "MSCI EM IMI":{cat:"ETF",ticker:"EIMI"},
-    "Nasdaq-100":{cat:"ETF",ticker:"QQQ"},
-    "Nvidia":{cat:"Stock",ticker:"NVDA"},
-    "TSMC":{cat:"Stock",ticker:"TSM"},
-    "Siemens Energy":{cat:"Stock",ticker:"ENR.DE"},
-    "Vertiv":{cat:"Stock",ticker:"VRT"}
-  },
+  settings:{expenses:0,emergencyMonths:6,monthlyStock:0,cashApr:2.5,currency:'EUR',_setupDone:false,_tourDone:false},
+  plan:[],
+  assetNames:[],
+  assetMeta:{},
   months:[]
 };
 let state=clone(defaultState);
@@ -615,7 +634,12 @@ function dismissSplash(){
   if(!splash||splash._dismissed)return;
   splash._dismissed=true;
   splash.classList.add('exit');
-  setTimeout(()=>splash.style.display='none',850);
+  setTimeout(()=>{
+    splash.style.display='none';
+    // Start tour for users who bypassed the setup wizard
+    if(state.settings._setupDone&&!state.settings._tourDone)
+      setTimeout(startTour,500);
+  },850);
 }
 function showSplashEnter(){
   const cta=document.getElementById('splashCta');
@@ -642,6 +666,7 @@ async function initApp(){
   state.settings.currency=state.settings.currency||'EUR';
   state.assetMeta=state.assetMeta||{};
   if(state.settings._setupDone===undefined)state.settings._setupDone=state.months.length>0;
+  if(state.settings._tourDone===undefined)state.settings._tourDone=state.months.length>0;
   updateCloudBadge();
   renderAll();
   if(!state.settings._setupDone){
@@ -1565,13 +1590,92 @@ document.getElementById('setupDoneBtn')?.addEventListener('click',()=>{
   state.settings._setupDone=true;
   saveState();renderAll();
   const wiz=document.getElementById('setupWizard');
-  if(wiz){wiz.style.opacity='0';wiz.style.transition='opacity .4s';setTimeout(()=>wiz.style.display='none',420);}
+  if(wiz){wiz.style.opacity='0';wiz.style.transition='opacity .4s';setTimeout(()=>{
+    wiz.style.display='none';
+    if(!state.settings._tourDone)startTour();
+  },420);}
 });
 
 // ── Service Worker registration (PWA) ──
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }
+
+
+// ── Onboarding tour ──
+const TOUR=[
+  {title:'Welcome to Catalis \u2726',
+   body:'Your personal finance dashboard. Track net worth, investments, and cash flow in one place. A 60-second tour will show you the ropes.',
+   sel:null},
+  {title:'Four sections',
+   body:'Overview shows your charts and KPIs. Monthly Entry is where you log data. History keeps all records. Settings is where you configure everything.',
+   sel:'.nav'},
+  {title:'Start in Settings',
+   body:'Set your monthly budget, emergency fund target, and investment plan. The app pre-fills your trade log every month automatically from your plan.',
+   sel:'[data-tab="settings"]'},
+  {title:'Monthly Entry',
+   body:'Once per month: review your trades (pre-filled from your plan), adjust any amounts, then enter actual portfolio values from your broker app. Takes about 5 minutes.',
+   sel:'[data-tab="entry"]'},
+  {title:'Overview dashboard',
+   body:'Net worth trend, savings rate, portfolio allocation, and emergency coverage update automatically every time you save a month.',
+   sel:'[data-tab="dashboard"]'},
+  {title:"You\u2019re all set!",
+   body:'Start in Settings \u2192 add your investment plan \u2192 then record your first month. Your data is saved on this device and never shared.',
+   sel:null,
+   cta:'Go to Settings \u2192',
+   ctaTab:'settings'},
+];
+let _tourIdx=0;
+
+function showTourStep(){
+  const step=TOUR[_tourIdx];
+  const spotlight=document.getElementById('tourSpotlight');
+  const card=document.getElementById('tourCard');
+  document.getElementById('tourStepNum').textContent=`${_tourIdx+1} / ${TOUR.length}`;
+  document.getElementById('tourTitleEl').textContent=step.title;
+  document.getElementById('tourBodyEl').textContent=step.body;
+  document.getElementById('tourNextBtn').textContent=
+    _tourIdx===TOUR.length-1?(step.cta||'Finish'):'Next \u2192';
+  if(step.sel){
+    const el=document.querySelector(step.sel);
+    if(el){
+      const r=el.getBoundingClientRect(),pad=10;
+      spotlight.style.left=(r.left-pad)+'px';
+      spotlight.style.top=(r.top-pad)+'px';
+      spotlight.style.width=(r.width+pad*2)+'px';
+      spotlight.style.height=(r.height+pad*2)+'px';
+      let cl=r.left,ct=r.bottom+pad+14;
+      if(ct+220>window.innerHeight)ct=r.top-pad-14-220;
+      cl=Math.max(12,Math.min(cl,window.innerWidth-306));
+      card.style.left=cl+'px';card.style.top=ct+'px';card.style.transform='none';
+      return;
+    }
+  }
+  // Centered — no highlight
+  spotlight.style.left='50%';spotlight.style.top='50%';
+  spotlight.style.width='0';spotlight.style.height='0';
+  card.style.left='50%';card.style.top='50%';card.style.transform='translate(-50%,-50%)';
+}
+
+function startTour(){
+  _tourIdx=0;
+  document.getElementById('tourOverlay').classList.add('active');
+  showTourStep();
+}
+
+function endTour(goTab){
+  document.getElementById('tourOverlay').classList.remove('active');
+  state.settings._tourDone=true;
+  saveState();
+  if(goTab){const b=document.querySelector(`[data-tab="${goTab}"]`);if(b)b.click();}
+}
+
+document.getElementById('tourNextBtn').onclick=()=>{
+  const step=TOUR[_tourIdx];
+  if(_tourIdx===TOUR.length-1){endTour(step.ctaTab||null);}
+  else{_tourIdx++;showTourStep();}
+};
+document.getElementById('tourSkipBtn').onclick=()=>endTour();
 
 setTabs();
 initApp();

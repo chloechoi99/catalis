@@ -1314,7 +1314,13 @@ document.getElementById("addAssetBtn").onclick=()=>{
 document.getElementById("addTradeBtn").onclick=()=>{
   const ts=gatherTrades();ts.push({type:"buy",name:"",amount:null,cost:null});renderTradesEditor(ts);
 };
-document.getElementById("addPlanBtn").onclick=()=>{state.plan.push({name:"New",amount:0});saveState();renderSettings()};
+document.getElementById("addPlanBtn").onclick=()=>{
+  state.plan.push({name:"",amount:0});
+  saveState();
+  renderSettings();
+  const inputs=document.querySelectorAll('.planName');
+  if(inputs.length)inputs[inputs.length-1].focus();
+};
 document.getElementById("saveSettingsBtn").onclick=saveSettings;
 document.getElementById("previewBtn").onclick=preview;
 document.getElementById("saveMonthBtn").onclick=saveMonth;

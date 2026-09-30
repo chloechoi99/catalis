@@ -308,7 +308,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <div id="tourOverlay">
   <div id="tourSpotlight"></div>
   <div id="tourCard">
-    <div class="tour-step-lbl" id="tourStepNum">1 / 6</div>
+    <div class="tour-step-lbl" id="tourStepNum">1 / 7</div>
     <h3 id="tourTitleEl"></h3>
     <p id="tourBodyEl"></p>
     <div class="tour-btns">
@@ -1640,6 +1640,12 @@ const TOUR=[
     title:'Step 5 \u2014 Data & backup',
     body:'"Link File" \u2192 auto-saves to a JSON file in your Google Drive on every save. "Export Excel" \u2192 spreadsheet for custom analysis. "Backup JSON" \u2192 manual snapshot. Your data never leaves your device by default.',
     sel:'.topbar-actions'
+  },
+  {
+    tab:'dashboard',
+    title:'Step 6 \u2014 Overview dashboard',
+    body:'After each monthly entry, your Overview updates instantly \u2014 net worth trend, portfolio return, savings rate, and emergency fund coverage. This is your financial health at a glance.',
+    sel:'.kpi-strip',wide:true
   },
   {
     title:"You\u2019re all set!",

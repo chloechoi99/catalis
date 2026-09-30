@@ -539,14 +539,17 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div class="field"><label>Monthly Investment Target (€) <button class="tip-btn" data-tip-key="settingStock" type="button">?</button></label><input id="settingMonthlyStock" type="number" step="0.01"></div>
           <div class="field"><label>Default Cash APR (%) <button class="tip-btn" data-tip-key="settingApr" type="button">?</button></label><input id="settingCashApr" type="number" step="0.01"></div>
         </div>
-        <button id="saveSettingsBtn" class="primary" style="margin-top:16px">Save Goals</button>
+        <div style="display:flex;gap:10px;margin-top:16px;align-items:center">
+          <button id="saveSettingsBtn" class="primary">Save Goals</button>
+          <button id="replayTourBtn" class="manage-btn" style="font-size:12px">&#9654; Replay tour</button>
+        </div>
       </div>
 
       <div class="card span6">
         <h2>Monthly Investment Allocation</h2>
         <div id="planEditor"></div>
         <button id="addPlanBtn" style="margin-top:8px">+ Add Line</button>
-        <div class="small" style="margin-top:10px">Current plan: S&amp;P 500 €115 / World ex-USA €75 / EM IMI €45 / Nasdaq-100 €15.</div>
+        
       </div>
 
       <div class="card span12">
@@ -1604,31 +1607,51 @@ if('serviceWorker' in navigator){
 
 // ── Onboarding tour ──
 const TOUR=[
-  {title:'Welcome to Catalis \u2726',
-   body:'Your personal finance dashboard. Track net worth, investments, and cash flow in one place. A 60-second tour will show you the ropes.',
-   sel:null},
-  {title:'Four sections',
-   body:'Overview shows your charts and KPIs. Monthly Entry is where you log data. History keeps all records. Settings is where you configure everything.',
-   sel:'.nav'},
-  {title:'Start in Settings',
-   body:'Set your monthly budget, emergency fund target, and investment plan. The app pre-fills your trade log every month automatically from your plan.',
-   sel:'[data-tab="settings"]'},
-  {title:'Monthly Entry',
-   body:'Once per month: review your trades (pre-filled from your plan), adjust any amounts, then enter actual portfolio values from your broker app. Takes about 5 minutes.',
-   sel:'[data-tab="entry"]'},
-  {title:'Overview dashboard',
-   body:'Net worth trend, savings rate, portfolio allocation, and emergency coverage update automatically every time you save a month.',
-   sel:'[data-tab="dashboard"]'},
-  {title:"You\u2019re all set!",
-   body:'Start in Settings \u2192 add your investment plan \u2192 then record your first month. Your data is saved on this device and never shared.',
-   sel:null,
-   cta:'Go to Settings \u2192',
-   ctaTab:'settings'},
+  {
+    title:'Welcome to Catalis \u2726',
+    body:'Your personal wealth tracker \u2014 net worth, investments, and cash flow in one place. This tour walks you through each key area.',
+    sel:null
+  },
+  {
+    tab:'settings',
+    title:'Step 1 \u2014 Financial targets',
+    body:'Set your monthly living expenses, emergency fund target (months of expenses to hold in cash), and monthly investment goal. These power your dashboard KPIs.',
+    sel:'#settingExpenses',wide:true
+  },
+  {
+    tab:'settings',
+    title:'Step 2 \u2014 Investment plan',
+    body:'Add your regular investments here. Search by name or ticker (VOO, Bitcoin, NVDA\u2026). Your monthly trade log pre-fills from this plan automatically \u2014 no re-typing every month.',
+    sel:'#planEditor',wide:true
+  },
+  {
+    tab:'entry',
+    title:'Step 3 \u2014 Monthly entry',
+    body:'Once a month: review your trades (pre-filled from plan, adjust amounts if needed), then enter actual portfolio values from your broker app. Takes about 5 minutes.',
+    sel:'.entry-card'
+  },
+  {
+    tab:'history',
+    title:'Step 4 \u2014 History',
+    body:'Every saved month appears here. Edit or delete records anytime. Your Overview \u2014 charts, net worth trend, savings rate \u2014 updates automatically with each entry.',
+    sel:'#historyTable'
+  },
+  {
+    title:'Step 5 \u2014 Data & backup',
+    body:'"Link File" \u2192 auto-saves to a JSON file in your Google Drive on every save. "Export Excel" \u2192 spreadsheet for custom analysis. "Backup JSON" \u2192 manual snapshot. Your data never leaves your device by default.',
+    sel:'.topbar-actions'
+  },
+  {
+    title:"You\u2019re all set!",
+    body:'Go to Settings \u2192 fill in your targets and investment plan \u2192 record your first month. You can replay this tour anytime from Settings.',
+    sel:null,
+    cta:'Open Settings \u2192',
+    ctaTab:'settings'
+  },
 ];
 let _tourIdx=0;
 
-function showTourStep(){
-  const step=TOUR[_tourIdx];
+function _placeTour(step){
   const spotlight=document.getElementById('tourSpotlight');
   const card=document.getElementById('tourCard');
   document.getElementById('tourStepNum').textContent=`${_tourIdx+1} / ${TOUR.length}`;
@@ -1636,25 +1659,33 @@ function showTourStep(){
   document.getElementById('tourBodyEl').textContent=step.body;
   document.getElementById('tourNextBtn').textContent=
     _tourIdx===TOUR.length-1?(step.cta||'Finish'):'Next \u2192';
-  if(step.sel){
-    const el=document.querySelector(step.sel);
-    if(el){
-      const r=el.getBoundingClientRect(),pad=10;
-      spotlight.style.left=(r.left-pad)+'px';
-      spotlight.style.top=(r.top-pad)+'px';
-      spotlight.style.width=(r.width+pad*2)+'px';
-      spotlight.style.height=(r.height+pad*2)+'px';
-      let cl=r.left,ct=r.bottom+pad+14;
-      if(ct+220>window.innerHeight)ct=r.top-pad-14-220;
-      cl=Math.max(12,Math.min(cl,window.innerWidth-306));
-      card.style.left=cl+'px';card.style.top=ct+'px';card.style.transform='none';
-      return;
-    }
+  const el=step.sel?document.querySelector(step.sel):null;
+  if(el){
+    const r=el.getBoundingClientRect(),pad=step.wide?20:12;
+    spotlight.style.left=(r.left-pad)+'px';
+    spotlight.style.top=(r.top-pad)+'px';
+    spotlight.style.width=(r.width+pad*2)+'px';
+    spotlight.style.height=(r.height+pad*2)+'px';
+    let cl=r.left,ct=r.bottom+pad+14;
+    if(ct+240>window.innerHeight)ct=r.top-pad-14-240;
+    if(ct<8)ct=8;
+    cl=Math.max(12,Math.min(cl,window.innerWidth-308));
+    card.style.cssText=`left:${cl}px;top:${ct}px;transform:none`;
+  } else {
+    spotlight.style.cssText='left:50%;top:50%;width:0;height:0';
+    card.style.cssText='left:50%;top:50%;transform:translate(-50%,-50%)';
   }
-  // Centered — no highlight
-  spotlight.style.left='50%';spotlight.style.top='50%';
-  spotlight.style.width='0';spotlight.style.height='0';
-  card.style.left='50%';card.style.top='50%';card.style.transform='translate(-50%,-50%)';
+}
+
+function showTourStep(){
+  const step=TOUR[_tourIdx];
+  if(step.tab){
+    const tb=document.querySelector(`[data-tab="${step.tab}"]`);
+    if(tb)tb.click();
+    setTimeout(()=>_placeTour(step),260);
+  } else {
+    _placeTour(step);
+  }
 }
 
 function startTour(){
@@ -1676,6 +1707,7 @@ document.getElementById('tourNextBtn').onclick=()=>{
   else{_tourIdx++;showTourStep();}
 };
 document.getElementById('tourSkipBtn').onclick=()=>endTour();
+document.getElementById('replayTourBtn').onclick=()=>startTour();
 
 setTabs();
 initApp();

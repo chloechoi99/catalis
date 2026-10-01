@@ -1257,25 +1257,25 @@ function renderTradesEditor(trades=[]){
 
 // ── Button wiring ──
 document.getElementById("estimateFromTradesBtn").onclick=()=>{
-  // For each asset, pre-fill = last month's value + net trades this month
   const trades=gatherTrades();
   const editingMo=editingMonth||(()=>{const m=document.getElementById("month").value;return m||null;})();
   const prevMonths=sortedMonths().filter(x=>!editingMo||x.month<editingMo);
   const prev=prevMonths.length?calcRecord(prevMonths[prevMonths.length-1]).holdingsObj||prevMonths[prevMonths.length-1].holdings||{}:{};
-  // Net trade delta per asset name
   const delta={};
   trades.forEach(t=>{
     if(!t.name||!t.amount)return;
     delta[t.name]=(delta[t.name]||0)+(t.type==='buy'?1:-1)*Number(t.amount||0);
   });
-  let filled=0;
-  document.querySelectorAll(".assetValue").forEach(el=>{
-    const name=el.dataset.name;
-    const base=Number(prev[name]||0);
-    const adj=delta[name]||0;
-    el.value=Math.max(0,base+adj).toFixed(2);
-    filled++;
+  // Build merged holdings: existing assets + any new assets from trades
+  const current=gatherCurrentHoldings();
+  Object.keys(delta).forEach(name=>{if(!(name in current))current[name]=0;});
+  const merged={};
+  Object.keys(current).forEach(name=>{
+    const base=Number(prev[name]||0)||Number(current[name]||0);
+    merged[name]=Math.max(0,base+(delta[name]||0));
   });
+  renderAssetsEditor(merged);
+  const filled=Object.keys(merged).length;
   toast(`Pre-filled ${filled} field${filled!==1?'s':''} — adjust to actual market values from your broker ✓`,'info',5000);
 };
 document.getElementById("manageAssetsBtn").onclick=()=>{

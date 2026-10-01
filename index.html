@@ -1266,6 +1266,15 @@ document.getElementById("estimateFromTradesBtn").onclick=()=>{
     if(!t.name||!t.amount)return;
     delta[t.name]=(delta[t.name]||0)+(t.type==='buy'?1:-1)*Number(t.amount||0);
   });
+  // Register any new trade assets into state.assetNames so renderAssetsEditor shows them
+  Object.keys(delta).forEach(name=>{
+    if(name&&!state.assetNames.includes(name)){
+      state.assetNames.push(name);
+      if(!state.assetMeta)state.assetMeta={};
+      if(!state.assetMeta[name])state.assetMeta[name]={cat:'ETF'};
+      saveState();
+    }
+  });
   // Build merged holdings: existing assets + any new assets from trades
   const current=gatherCurrentHoldings();
   Object.keys(delta).forEach(name=>{if(!(name in current))current[name]=0;});

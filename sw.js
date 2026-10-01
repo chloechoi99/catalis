@@ -1,4 +1,4 @@
-const CACHE='catalis-v1';
+const CACHE='catalis-v2';
 const CORE=['/','/index.html'];
 
 self.addEventListener('install',e=>{
@@ -16,15 +16,12 @@ self.addEventListener('activate',e=>{
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
   e.respondWith(
-    caches.match(e.request).then(cached=>{
-      if(cached)return cached;
-      return fetch(e.request).then(resp=>{
-        if(resp.ok){
-          const clone=resp.clone();
-          caches.open(CACHE).then(c=>c.put(e.request,clone));
-        }
-        return resp;
-      });
-    })
+    fetch(e.request).then(resp=>{
+      if(resp.ok){
+        const clone=resp.clone();
+        caches.open(CACHE).then(c=>c.put(e.request,clone));
+      }
+      return resp;
+    }).catch(()=>caches.match(e.request))
   );
 });
